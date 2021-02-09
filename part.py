@@ -1,3 +1,4 @@
+import json
 from bot import dp, bot
 from keyboards import keyboard_dict, answer_dict, return_path_dict
 from aiogram.dispatcher.filters.state import State, StatesGroup
@@ -7,12 +8,17 @@ from aiogram.types.reply_keyboard import ReplyKeyboardMarkup
 from aiogram.dispatcher import FSMContext
 
 
-class Adress(StatesGroup):
-    adress = State()
-    streat = State()
+def prev_path(path):
+    return '/'.join(path.split('/')[:-2]) + '/'
 
 
-def prev_path(path): return '/'.join(path.split('/')[:-2]) + '/'
+@dp.message_handler(state='*', commands='cancel')
+async def cancel_handler(message: Message, state: FSMContext):
+    """
+    Allow user to cancel any action
+    """
+    await state.finish()
+    await message.reply('Cancelled')
 
 
 @dp.message_handler(state='*', commands=['start', 'help'])
@@ -26,7 +32,8 @@ async def send_welcome(message: Message, state: FSMContext):
 @dp.message_handler(lambda message: message.text == 'Сохранить', state='*')
 async def save_progress(message: Message, state: FSMContext):
     async with state.proxy() as data:
-        print(data)
+        with open('test.json', 'w') as f:
+            json.dump(data.__dict__['_copy'], f)
     await message.reply('Прогресс сохранен')
 
 
