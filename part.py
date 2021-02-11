@@ -1,31 +1,22 @@
 import json
 from bot import dp, bot
-from keyboards import keyboard_dict, answer_dict, return_path_dict
+from keyboard.common import keyboard, answer, return_menu
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
 from aiogram.types.inline_keyboard import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.types.reply_keyboard import ReplyKeyboardMarkup
 from aiogram.dispatcher import FSMContext
-
-
-def prev_path(path):
-    return '/'.join(path.split('/')[:-2]) + '/'
-
-
-@dp.message_handler(state='*', commands='cancel')
-async def cancel_handler(message: Message, state: FSMContext):
-    """
-    Allow user to cancel any action
-    """
-    await state.finish()
-    await message.reply('Cancelled')
+from helpers import prev_path
 
 
 @dp.message_handler(state='*', commands=['start', 'help'])
 async def send_welcome(message: Message, state: FSMContext):
+    
+    await state.finish()
+
     async with state.proxy() as data:
         data['path'] = '/'
-    await message.reply("Введите адрес объекта", reply_markup=keyboard_dict['/'])
+    await message.reply("Введите адрес объекта", reply_markup=keyboard['/'])
     await message.reply("init", reply_markup=ReplyKeyboardMarkup([['назад'], ['Главное меню'], ['Сохранить']]))
 
 
@@ -42,9 +33,9 @@ async def value_saver(message: Message, state: FSMContext):
     path = ''
     async with state.proxy() as data:
         data[data['path']] = message.text
-        data['path'] = return_path_dict[data['path']]
+        data['path'] = return_menu[data['path']]
         path = data['path']
-    await message.reply('Значение сохраненно', reply_markup=keyboard_dict[path])
+    await message.reply('Значение сохраненно', reply_markup=keyboard[path])
 
 
 @dp.message_handler(lambda message: message.text == 'назад', state='*')
@@ -53,7 +44,7 @@ async def bactrack(message: Message, state: FSMContext):
     async with state.proxy() as data:
         path = prev_path(data['path'])
         data['path'] = path
-    await message.reply('----------------------', reply_markup=keyboard_dict[path])
+    await message.reply('----------------------', reply_markup=keyboard[path])
 
 
 def get_keyboard(menu_items):
@@ -70,11 +61,11 @@ async def process_callback_button1(callback_query: CallbackQuery, state: FSMCont
     path = ''
     async with state.proxy() as data:
         path = data['path'] + callback_query.data + '/'
-        if path in answer_dict:
-            await bot.send_message(callback_query.message.chat.id, answer_dict[path])
+        if path in answer:
+            await bot.send_message(callback_query.message.chat.id, answer[path])
             return
-        if path not in keyboard_dict:
+        if path not in keyboard:
             data[data['path']] = callback_query.data
-            path = return_path_dict[data['path']]
+            path = return_menu[data['path']]
         data['path'] = path
-    await bot.send_message(callback_query.message.chat.id, '----------------------', reply_markup=keyboard_dict[path])
+    await bot.send_message(callback_query.message.chat.id, '----------------------', reply_markup=keyboard[path])
