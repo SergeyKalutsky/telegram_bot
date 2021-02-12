@@ -11,4 +11,4 @@ def get_keyboard(menu_items):
 
 keyboard = {}
 answer = {}
-return_menu = {}
+return_menu = []

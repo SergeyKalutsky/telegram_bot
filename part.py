@@ -34,7 +34,6 @@ async def save_progress(message: Message, state: FSMContext):
 async def value_saver(message: Message, state: FSMContext):
     path = ''
     async with state.proxy() as data:
-        print(data['path'])
         data[data['path']] = message.text
         data = set_return_path(data)
         path = data['path']
@@ -56,10 +55,17 @@ async def process_callback(callback_query: CallbackQuery, state: FSMContext):
     path = ''
     async with state.proxy() as data:
         path = data['path'] + callback_query.data + '/'
-        if path in answer:
+        if callback_query.data in answer:
             data['path'] = path
-            await bot.send_message(callback_query.message.chat.id, answer[path])
+            await bot.send_message(callback_query.message.chat.id, answer[callback_query.data])
             return
+
+        key = data['path'].split('/')[-2]+'/'+callback_query.data
+        if key in answer:
+            data['path'] = path
+            await bot.send_message(callback_query.message.chat.id, answer[key])
+            return
+
         if path not in keyboard:
             data[data['path']] = callback_query.data
             path = set_return_path(data)['path']
