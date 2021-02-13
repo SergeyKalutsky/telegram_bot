@@ -1,4 +1,4 @@
-from .supporting_elements import keyboard, answer, return_menu, get_keyboard
+from .supporting_elements import keyboard, answer, get_keyboard
 
 keyboard = {**keyboard, **{
     '/Благоустройство/': get_keyboard(['Дворовая территория']),
@@ -11,6 +11,3 @@ answer = {**answer, **{
     'Примыкает ли здание к соседнему?/Да': 'Пометить на плане, указать оси и сделать фото',
 }}
 
-return_menu += [['Дворовая территория', '/Благоустройство/Дворовая территория/'],
-                ['Благоустройство', '/']
-                ]

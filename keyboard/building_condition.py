@@ -1,6 +1,4 @@
-from .landscaping import keyboard, answer, return_menu, get_keyboard
-
-from .supporting_elements import keyboard, answer, return_menu, get_keyboard
+from .landscaping import keyboard, answer, get_keyboard
 
 keyboard = {**keyboard, **{
     '/Состояние здания/': get_keyboard(['Выветривание кладки', 'Состояние перемычек', 'Деформации']),
@@ -17,6 +15,4 @@ keyboard = {**keyboard, **{
 answer = {**answer, **{
     'Деформации/Наблюдаются': 'Введите текст'
 }}
-
-return_menu += [['Состояние здания', '/Состояние здания/']]
 

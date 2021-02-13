@@ -1,12 +1,12 @@
 import json
 from bot import dp, bot
-from keyboard.supporting_elements import keyboard, answer, return_menu
+from keyboard.facades import keyboard, answer
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import CallbackQuery, Message
 from aiogram.types.inline_keyboard import InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.types.reply_keyboard import ReplyKeyboardMarkup
 from aiogram.dispatcher import FSMContext
-from helpers import prev_path, set_return_path
+from helpers import prev_path
 
 
 
@@ -35,9 +35,10 @@ async def value_saver(message: Message, state: FSMContext):
     path = ''
     async with state.proxy() as data:
         data[data['path']] = message.text
-        data = set_return_path(data)
-        path = data['path']
-    await message.reply('Значение сохраненно', reply_markup=keyboard[path])
+        # data = set_return_path(data)
+        data['path'] = prev_path(data['path'])
+    await message.reply('Значение сохраненно')
+    await message.reply(data['path'], reply_markup=keyboard[data['path']])
 
 
 @dp.message_handler(lambda message: message.text == 'назад', state='*')
@@ -46,7 +47,7 @@ async def bactrack(message: Message, state: FSMContext):
     async with state.proxy() as data:
         path = prev_path(data['path'])
         data['path'] = path
-    await message.reply('----------------------', reply_markup=keyboard[path])
+    await message.reply(data['path'], reply_markup=keyboard[path])
 
 
 @dp.callback_query_handler(lambda callback_query: True, state='*')
@@ -68,6 +69,7 @@ async def process_callback(callback_query: CallbackQuery, state: FSMContext):
 
         if path not in keyboard:
             data[data['path']] = callback_query.data
-            path = set_return_path(data)['path']
+            path = prev_path(data['path'])
+            # path = set_return_path(data)['path']
         data['path'] = path
-    await bot.send_message(callback_query.message.chat.id, '----------------------', reply_markup=keyboard[path])
+    await bot.send_message(callback_query.message.chat.id,  data['path'], reply_markup=keyboard[path])
