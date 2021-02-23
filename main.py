@@ -3,6 +3,7 @@ from bot import dp, bot
 from answers import answer
 from aiogram import executor
 from helpers import prev_path
+from keyboard import get_keyboard
 from keyboard.appartments import keyboard
 from aiogram.dispatcher import FSMContext
 from aiogram.types import CallbackQuery, Message
@@ -63,11 +64,36 @@ async def bactrack(message: Message, state: FSMContext):
     await message.reply(data['path'], reply_markup=keyboard[path])
 
 
+def calculate_area(data):
+    live = int(data['/Общие сведения/Площадь/Жилая/'])
+    comm = int(data['/Общие сведения/Площадь/Общая/'])
+    return comm - live
+
+
 @dp.callback_query_handler(lambda callback_query: True, state='*')
 async def process_callback(callback_query: CallbackQuery, state: FSMContext):
     await bot.answer_callback_query(callback_query.id)
     path = ''
     async with state.proxy() as data:
+
+        if callback_query.data == 'Нежилая':
+            p_comm = '/Общие сведения/Площадь/Общая/'
+            p_live = '/Общие сведения/Площадь/Жилая/'
+            if p_comm in data and p_live in data:
+                
+                area = calculate_area(data)
+                keyboard['/Общие сведения/Площадь/Нежилая/'] = get_keyboard(
+                    [f'рассчитано {area} м^2 правильно?'])
+                keyboard[f'/Общие сведения/Площадь/Нежилая/рассчитано {area} м^2 правильно?/'] = get_keyboard([
+                                                                                                              'Да', 'Нет'])
+                answer[f'рассчитано {area} м^2 правильно?/Нет'] = "Введите правильное значение"
+            else:
+                path = prev_path(data['path'])
+                data['path'] = path
+                msg = 'Значения для жилой и нежилой не введены'
+                await bot.send_message(callback_query.message.chat.id,  msg, reply_markup=keyboard[path])
+                return
+
         path = data['path'] + callback_query.data + '/'
 
         # check 3 conditions
