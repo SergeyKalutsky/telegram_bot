@@ -1,8 +1,9 @@
+import os
 import json
 from bot import dp, bot
 from answers import answer
 from aiogram import executor
-from helpers import prev_path, calculate_area
+from helpers import prev_path, calculate_area, make_img_fname, put_key_json
 from keyboard import get_keyboard
 from keyboard.appartments import keyboard
 from aiogram.dispatcher import FSMContext
@@ -15,12 +16,15 @@ from aiogram.types.inline_keyboard import InlineKeyboardButton, InlineKeyboardMa
 @dp.message_handler(content_types=['photo'], state='*',)
 async def handle_docs_photo(message: Message, state: FSMContext):
 
-    path = ''
+    img_fname = make_img_fname()
+    img_path = os.path.join('data/photo', img_fname)
+
     async with state.proxy() as data:
-        path = data['path']
+        put_key_json(data['path'], data, img_fname, photo=True)
+
         data['path'] = prev_path(data['path'])
-    path = path.replace('/', '_')
-    await message.photo[-1].download(f'{path}.jpg')
+    await message.photo[-1].download(img_path)
+    await message.reply('Фото сохранено')
     await message.reply(data['path'], reply_markup=keyboard[data['path']])
 
 
@@ -39,7 +43,7 @@ async def send_welcome(message: Message, state: FSMContext):
 async def save_progress(message: Message, state: FSMContext):
     async with state.proxy() as data:
         print(data.__dict__['_copy'])
-        with open('test.json', 'w') as f:
+        with open('data/test.json', 'w') as f:
             json.dump(data.__dict__['_copy'], f)
     await message.reply('Прогресс сохранен')
 
@@ -54,7 +58,7 @@ async def value_saver(message: Message, state: FSMContext):
                 await message.reply(f'Введенно неверное значение, повторите еще раз')
                 return
 
-        data[data['path']] = message.text
+        put_key_json(data['path'], data, message.text)
         data['path'] = prev_path(data['path'])
     await message.reply(f'Значение сохраненно {message.text}')
     await message.reply(data['path'], reply_markup=keyboard[data['path']])
@@ -102,7 +106,7 @@ async def process_callback(callback_query: CallbackQuery, state: FSMContext):
                 return
 
         if path not in keyboard:
-            data[data['path']] = callback_query.data
+            put_key_json(data['path'], data, callback_query.data)
             path = prev_path(data['path'])
             await bot.send_message(callback_query.message.chat.id, f'Значение сохраненно: {callback_query.data}')
 
