@@ -2,7 +2,7 @@ import json
 from bot import dp, bot
 from answers import answer
 from aiogram import executor
-from helpers import prev_path
+from helpers import prev_path, calculate_area
 from keyboard import get_keyboard
 from keyboard.appartments import keyboard
 from aiogram.dispatcher import FSMContext
@@ -69,12 +69,6 @@ async def bactrack(message: Message, state: FSMContext):
     await message.reply(data['path'], reply_markup=keyboard[path])
 
 
-def calculate_area(data):
-    live = int(data['/Общие сведения/Площадь/Жилая/'])
-    comm = int(data['/Общие сведения/Площадь/Общая/'])
-    return comm - live
-
-
 @dp.callback_query_handler(lambda callback_query: True, state='*')
 async def process_callback(callback_query: CallbackQuery, state: FSMContext):
     await bot.answer_callback_query(callback_query.id)
@@ -100,29 +94,18 @@ async def process_callback(callback_query: CallbackQuery, state: FSMContext):
                 return
 
         path = data['path'] + callback_query.data + '/'
-
-        # check 3 conditions
-        key = '/'.join(data['path'].split('/')[-3:-1])+'/'+callback_query.data
-        if key in answer:
-            data['path'] = path
-            await bot.send_message(callback_query.message.chat.id, answer[key])
-            return
-        # check 2 conditions
-        key = data['path'].split('/')[-2]+'/'+callback_query.data
-        if key in answer:
-            data['path'] = path
-            await bot.send_message(callback_query.message.chat.id, answer[key])
-            return
-        # check 1 condition
-        if callback_query.data in answer:
-            data['path'] = path
-            await bot.send_message(callback_query.message.chat.id, answer[callback_query.data])
-            return
+        for i in range(-3, 0):
+            key = '/'.join(path[:-1].split('/')[i:])
+            if key in answer:
+                data['path'] = path
+                await bot.send_message(callback_query.message.chat.id, answer[key])
+                return
 
         if path not in keyboard:
             data[data['path']] = callback_query.data
             path = prev_path(data['path'])
             await bot.send_message(callback_query.message.chat.id, f'Значение сохраненно: {callback_query.data}')
+
         data['path'] = path
     await bot.send_message(callback_query.message.chat.id,  data['path'], reply_markup=keyboard[path])
 
