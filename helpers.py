@@ -23,7 +23,7 @@ def put_key_json(path, data, val, photo=False):
         data = data[keys[i]]
 
     if photo:
-        if keys[-1] not in data:
+        if keys[-1] not in data or type(data[keys[-1]]) == dict:
             data[keys[-1]] = [val]
         else:
             data[keys[-1]].append(val)
