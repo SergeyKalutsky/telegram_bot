@@ -46,10 +46,15 @@ async def save_progress(message: Message, state: FSMContext):
 
 @dp.message_handler(lambda message: message.text not in ['назад', 'Сохранить', 'Главное меню'], state='*')
 async def value_saver(message: Message, state: FSMContext):
-    path = ''
+    p_comm = '/Общие сведения/Площадь/Общая/'
+    p_live = '/Общие сведения/Площадь/Жилая/'
     async with state.proxy() as data:
+        if data['path'] in [p_comm, p_live]:
+            if not message.text.isdigit():
+                await message.reply(f'Введенно неверное значение, повторите еще раз')
+                return
+
         data[data['path']] = message.text
-        # data = set_return_path(data)
         data['path'] = prev_path(data['path'])
     await message.reply(f'Значение сохраненно {message.text}')
     await message.reply(data['path'], reply_markup=keyboard[data['path']])
@@ -80,7 +85,7 @@ async def process_callback(callback_query: CallbackQuery, state: FSMContext):
             p_comm = '/Общие сведения/Площадь/Общая/'
             p_live = '/Общие сведения/Площадь/Жилая/'
             if p_comm in data and p_live in data:
-                
+
                 area = calculate_area(data)
                 keyboard['/Общие сведения/Площадь/Нежилая/'] = get_keyboard(
                     [f'рассчитано {area} м^2 правильно?'])
