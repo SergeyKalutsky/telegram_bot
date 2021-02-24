@@ -35,6 +35,7 @@ async def send_welcome(message: Message, state: FSMContext):
 
     async with state.proxy() as data:
         data['path'] = '/'
+        data['photo'] = {}
     await message.reply("Введите адрес объекта", reply_markup=keyboard['/'])
     await message.reply("init", reply_markup=ReplyKeyboardMarkup([['/start'], ['Сохранить'], ['назад']]))
 

@@ -17,15 +17,23 @@ def make_img_fname(ext='.jpg'):
 
 def put_key_json(path, data, val, photo=False):
     keys = path[1:-1].split('/')
-    for i in range(len(keys)-1):
-        if keys[i] not in data:
-            data[keys[i]] = {keys[i+1]: {}}
-        data = data[keys[i]]
 
-    if photo:
-        if keys[-1] not in data or type(data[keys[-1]]) == dict:
-            data[keys[-1]] = [val]
-        else:
-            data[keys[-1]].append(val)
-    else:
+    if not photo:
+        for i in range(len(keys)-1):
+            if keys[i] not in data:
+                data[keys[i]] = {keys[i+1]: {}}
+            data = data[keys[i]]
         data[keys[-1]] = val
+        
+    else:
+        if keys[0] not in data['photo']:
+            data['photo'] = {keys[0]: {}}
+        print(data)
+        data = data['photo'][keys[0]]
+        print(data)
+        key = '. '.join(keys[1:])
+        if key not in data or type(data[key]) == dict:
+            data[key] = [val]
+        else:
+            data[key].append(val)
+        print(data)
