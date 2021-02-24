@@ -27,13 +27,10 @@ def put_key_json(path, data, val, photo=False):
         
     else:
         if keys[0] not in data['photo']:
-            data['photo'] = {keys[0]: {}}
-        print(data)
+            data['photo'][keys[0]] = {}
         data = data['photo'][keys[0]]
-        print(data)
         key = '. '.join(keys[1:])
         if key not in data or type(data[key]) == dict:
             data[key] = [val]
         else:
             data[key].append(val)
-        print(data)
