@@ -35,9 +35,10 @@ async def send_welcome(message: Message, state: FSMContext):
 
     async with state.proxy() as data:
         data['path'] = '/'
-        data['photo'] = {}
+        if 'photo' not in data:
+            data['photo'] = {}
     await message.reply("Введите адрес объекта", reply_markup=keyboard['/'])
-    await message.reply("init", reply_markup=ReplyKeyboardMarkup([['/start'], ['Сохранить'], ['назад']]))
+    await message.reply("init", reply_markup=ReplyKeyboardMarkup([['/start'], ['Назад'], ['Сохранить'], ['Перегрузить']]))
 
 
 @dp.message_handler(lambda message: message.text == 'Сохранить', state='*')
@@ -48,8 +49,19 @@ async def save_progress(message: Message, state: FSMContext):
             json.dump(data.__dict__['_copy'], f)
     await message.reply('Прогресс сохранен')
 
+@dp.message_handler(lambda message: message.text == 'Перегрузить', state='*')
+async def load_progress(message: Message, state: FSMContext):
+    async with state.proxy() as data:
+        with open('data/test.json', 'r') as f:
+            ldata = json.load(f)
+            for key in ldata:
+                data[key] = ldata[key]
+    # print(type(data))
+    print(data)
+    await message.reply('Прогресс загружен с последнего сохранения')
 
-@dp.message_handler(lambda message: message.text not in ['назад', 'Сохранить', 'Главное меню'], state='*')
+
+@dp.message_handler(lambda message: message.text not in ['Назад', 'Сохранить', 'Главное меню', 'Перегрузить'], state='*')
 async def value_saver(message: Message, state: FSMContext):
     p_comm = '/Общие сведения/Площадь/Общая/'
     p_live = '/Общие сведения/Площадь/Жилая/'
@@ -65,7 +77,7 @@ async def value_saver(message: Message, state: FSMContext):
     await message.reply(data['path'], reply_markup=keyboard[data['path']])
 
 
-@dp.message_handler(lambda message: message.text == 'назад', state='*')
+@dp.message_handler(lambda message: message.text == 'Назад', state='*')
 async def bactrack(message: Message, state: FSMContext):
     path = ''
     async with state.proxy() as data:
