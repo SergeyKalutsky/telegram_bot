@@ -15,6 +15,13 @@ from aiogram.types.inline_keyboard import InlineKeyboardButton, InlineKeyboardMa
 BASEDIR = 'web/app/app/static/data'
 
 
+def end_path(path):
+    k = keyboard[path]
+    for val in k.values['inline_keyboard']:
+        if path + val[0].text + '/' in keyboard:
+            return False
+    return True
+
 @dp.message_handler(content_types=['photo'], state='*',)
 async def handle_docs_photo(message: Message, state: FSMContext):
 
@@ -89,11 +96,17 @@ async def value_saver(message: Message, state: FSMContext):
             else:
                 await message.reply("Не выбран id задачи. Пришлите его в ответ")
                 return
+        
+        for i in range(-3, 0):
+            key = '/'.join(data['path'][:-1].split('/')[i:])
+            if key in answer:
+                put_key_json(data['path'], data, message.text)
+                data['path'] = prev_path(data['path'])
+                await message.reply(f'Значение сохраненно {message.text}')
+                await message.reply(data['path'], reply_markup=keyboard[data['path']])
+                return
 
-        put_key_json(data['path'], data, message.text)
-        data['path'] = prev_path(data['path'])
-    await message.reply(f'Значение сохраненно {message.text}')
-    await message.reply(data['path'], reply_markup=keyboard[data['path']])
+    await message.reply(prev_path(data['path']), reply_markup=keyboard[prev_path(data['path'])])
 
 
 @dp.message_handler(lambda message: message.text == 'Назад', state='*')
@@ -127,6 +140,10 @@ async def process_callback(callback_query: CallbackQuery, state: FSMContext):
                 return
 
         if path not in keyboard:
+            if not end_path(data['path']):
+                await bot.send_message(callback_query.message.chat.id,  data['path'], reply_markup=keyboard[path])
+                return
+
             put_key_json(data['path'], data, callback_query.data)
             path = prev_path(data['path'])
             await bot.send_message(callback_query.message.chat.id, f'Значение сохраненно: {callback_query.data}')
