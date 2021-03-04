@@ -1,161 +1,67 @@
+import sys
 import os
-import json
-from bot import dp, bot
-from answers import answer
-from aiogram import executor
-from helpers import prev_path, make_img_fname, put_key_json, not_filled
-from keyboard import get_keyboard
-from keyboard.appartments import keyboard
-from aiogram.dispatcher import FSMContext
-from aiogram.types import CallbackQuery, Message
-from aiogram.types.reply_keyboard import ReplyKeyboardMarkup
-from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.types.inline_keyboard import InlineKeyboardButton, InlineKeyboardMarkup
-
-BASEDIR = 'web/app/app/static/data'
+import shutil
+from datetime import datetime
+from app.db.db import insert_data, select_data, select_job, insert_job, select_description
+from app.core.helpers import make_word_doc
+from flask import Flask, render_template, request, session,\
+    redirect, url_for, jsonify, Blueprint, send_file
+from flask_login import login_required
+from flask import current_app as app
+from flask_principal import Principal, Permission, Identity, RoleNeed, identity_changed, \
+    identity_loaded, AnonymousIdentity, UserNeed
 
 
-def end_path(path):
-    k = keyboard[path]
-    for val in k.values['inline_keyboard']:
-        if path + val[0].text + '/' in keyboard:
-            return False
-    return True
+data_collection = Blueprint('data_collection', __name__)
 
 
-@dp.message_handler(content_types=['photo'], state='*',)
-async def handle_docs_photo(message: Message, state: FSMContext):
+@data_collection.route("/parsing_manage", methods=['GET', 'POST'])
+@login_required
+def parsing_manage():
+    if request.method == 'POST':
+        house_id = request.form['house_id']
+        company_id = request.form['company_id']
 
-    async with state.proxy() as data:
-        if 'id' not in data:
-            await message.reply("Не выбран id задачи. Пришлите его в ответ")
-            return
+        if request.form['action'] == 'download_report':
+            if house_id != '' and company_id != '':
+                job = select_job(company_id, house_id)
+                if job is not None:
+                    company = select_description(company_id)
+                    house = select_description(house_id)
+                    make_word_doc(job[0], company, house)
+                return jsonify({'url': url_for('data_collection.download',
+                                            folder=job[0])})
 
-        img_fname = make_img_fname()
-        img_path = os.path.join(BASEDIR, data['id'], 'photo', img_fname)
-
-        put_key_json(data['path'], data, img_fname, photo=True)
-
-        data['path'] = prev_path(data['path'])
-    await message.photo[-1].download(img_path)
-    await message.reply('Фото сохранено')
-    await message.reply(data['path'], reply_markup=keyboard[data['path']])
-
-
-@dp.message_handler(lambda message: message.text == 'Сохранить', state='*')
-async def save_progress(message: Message, state: FSMContext):
-    async with state.proxy() as data:
-        if 'id' not in data:
-            await message.reply("Не выбран id задачи. Пришлите его в ответ")
-            return
-
-        print(data.__dict__['_copy'])
-        with open(os.path.join(BASEDIR, data['id'], 'data.json'), 'w') as f:
-            json.dump(data.__dict__['_copy'], f)
-    await message.reply('Прогресс сохранен')
+        if request.form['action'] == 'show_id':
+            if house_id != '' and company_id != '': 
+                job = select_job(company_id, house_id)
+                if job is None:
+                    insert_job({'company_id':company_id, 'house_id':house_id})
+                    job = select_job(company_id, house_id)
+                return jsonify({'id': job})
+            return jsonify({'id': 'Компания или дом не выбраны'})
+    return render_template('parsing_manage.html', companies=select_data(1), houses=select_data(2))
 
 
-@dp.message_handler(state='*', commands=['start', 'help'])
-async def start(message: Message, state: FSMContext):
-
-    async with state.proxy() as data:
-        if 'id' not in data:
-            await message.reply("Не выбран id задачи. Пришлите его в ответ")
-            return
-        data['path'] = '/'
-
-    await message.reply("Введите адрес объекта", reply_markup=keyboard['/'])
-    await message.reply("init", reply_markup=ReplyKeyboardMarkup([['/start'], ['Назад'], ['Не заполнено'], ['Сохранить'], ['Выход']]))
+@data_collection.route("/parsing_manage/download/<folder>")
+@login_required
+def download(folder):
+    path = f'static/data/{folder}/отчет.docx'
+    return send_file(path, attachment_filename='отчет.docx')
 
 
-@dp.message_handler(lambda message: message.text == 'Выход', state='*')
-async def exit(message: Message, state: FSMContext):
-    await state.finish()
-    await message.reply('Работа завершена')
+@data_collection.route("/add_entity", methods=['GET', 'POST'])
+@login_required
+def add_entity():
+    message = ''
+    if request.method == 'POST':
+        if request.form['source'] == 'Компания':
+            insert_data({'type_id': 1, 'description': request.form['name']})
+        if request.form['source'] == 'Дом':
+            insert_data({'type_id': 2, 'description': request.form['name']})
+        message = 'Запись добавлена'
+
+    return render_template('parsing_create.html', message=message)
 
 
-@dp.message_handler(lambda message: message.text == 'Не заполнено', state='*')
-async def statistic(message: Message, state: FSMContext):
-    async with state.proxy() as data:
-        btns = not_filled(data['path'], keyboard[data['path']], data)
-        btns = ', '.join(btns)
-    await message.reply(f'Не заполнены поля: {btns}')
 
-
-@dp.message_handler(lambda message: message.text not in ['Назад', 'Сохранить', 'Главное меню', 'Выход'], state='*')
-async def value_saver(message: Message, state: FSMContext):
-    async with state.proxy() as data:
-        if 'id' not in data:
-            if message.text.isdigit():
-                data['id'] = message.text
-                if not os.path.exists(os.path.join(BASEDIR, data['id'])):
-                    os.mkdir(os.path.join(BASEDIR, data['id']))
-                    os.mkdir(os.path.join(BASEDIR, data['id'], 'photo'))
-                else:
-                    path = os.path.join(BASEDIR, data['id'], 'data.json')
-                    if os.path.exists(path):
-                        with open(path, 'r') as f:
-                            ldata = json.load(f)
-                            for key in ldata:
-                                data[key] = ldata[key]
-                if 'photo' not in data:
-                    data['photo'] = {}
-                await message.reply(f"Выбран id задачи {message.text}")
-                await message.reply("init", reply_markup=ReplyKeyboardMarkup([['/start'], ['Назад'], ['Не заполнено'], ['Сохранить'], ['Выход']]))
-                return
-            else:
-                await message.reply("Не выбран id задачи. Пришлите его в ответ")
-                return
-
-        for i in range(-3, 0):
-            key = '/'.join(data['path'][:-1].split('/')[i:])
-            if key in answer:
-                put_key_json(data['path'], data, message.text)
-                data['path'] = prev_path(data['path'])
-                await message.reply(f'Значение сохраненно {message.text}')
-                await message.reply(data['path'], reply_markup=keyboard[data['path']])
-                return
-
-    await message.reply(data['path'], reply_markup=keyboard[data['path']])
-
-
-@dp.message_handler(lambda message: message.text == 'Назад', state='*')
-async def backtrack(message: Message, state: FSMContext):
-    path = ''
-    async with state.proxy() as data:
-        if 'id' not in data:
-            await message.reply("Не выбран id задачи. Пришлите его в ответ")
-            return
-
-        path = prev_path(data['path'])
-        data['path'] = path
-    await message.reply(data['path'], reply_markup=keyboard[path])
-
-
-@dp.callback_query_handler(lambda callback_query: True, state='*')
-async def process_callback(callback_query: CallbackQuery, state: FSMContext):
-    await bot.answer_callback_query(callback_query.id)
-    path = ''
-    async with state.proxy() as data:
-        if 'id' not in data:
-            await bot.send_message(callback_query.message.chat.id, "Не выбран id задачи. Пришлите его в ответ")
-            return
-
-        path = data['path'] + callback_query.data + '/'
-        for i in range(-3, 0):
-            key = '/'.join(path[:-1].split('/')[i:])
-            if key in answer:
-                data['path'] = path
-                await bot.send_message(callback_query.message.chat.id, answer[key])
-                return
-
-        if path not in keyboard:
-            if not end_path(data['path']):
-                return
-
-            put_key_json(data['path'], data, callback_query.data)
-            path = prev_path(data['path'])
-            await bot.send_message(callback_query.message.chat.id, f'Значение сохраненно: {callback_query.data}')
-
-        data['path'] = path
-    await bot.send_message(callback_query.message.chat.id,  data['path'], reply_markup=keyboard[path])

@@ -15,12 +15,15 @@ from aiogram.types.inline_keyboard import InlineKeyboardButton, InlineKeyboardMa
 BASEDIR = 'web/app/app/static/data'
 
 
-def end_path(path):
+def end_path(path, end_val):
     k = keyboard[path]
+    the_end = True
     for val in k.values['inline_keyboard']:
+        if val[0].text == end_val:
+            return True
         if path + val[0].text + '/' in keyboard:
-            return False
-    return True
+            the_end = False
+    return the_end
 
 
 @dp.message_handler(content_types=['photo'], state='*',)
@@ -151,7 +154,7 @@ async def process_callback(callback_query: CallbackQuery, state: FSMContext):
                 return
 
         if path not in keyboard:
-            if not end_path(data['path']):
+            if not end_path(data['path'], callback_query.data):
                 return
 
             put_key_json(data['path'], data, callback_query.data)
