@@ -3,7 +3,7 @@ import json
 from bot import dp, bot
 from answers import answer
 from aiogram import executor
-from helpers import prev_path, calculate_area, make_img_fname, put_key_json
+from helpers import prev_path, make_img_fname, put_key_json, not_filled
 from keyboard import get_keyboard
 from keyboard.appartments import keyboard
 from aiogram.dispatcher import FSMContext
@@ -21,6 +21,7 @@ def end_path(path):
         if path + val[0].text + '/' in keyboard:
             return False
     return True
+
 
 @dp.message_handler(content_types=['photo'], state='*',)
 async def handle_docs_photo(message: Message, state: FSMContext):
@@ -64,13 +65,21 @@ async def start(message: Message, state: FSMContext):
         data['path'] = '/'
 
     await message.reply("Введите адрес объекта", reply_markup=keyboard['/'])
-    await message.reply("init", reply_markup=ReplyKeyboardMarkup([['/start'], ['Назад'], ['Сохранить'], ['Выход']]))
+    await message.reply("init", reply_markup=ReplyKeyboardMarkup([['/start'], ['Назад'], ['Не заполнено'], ['Сохранить'], ['Выход']]))
 
 
 @dp.message_handler(lambda message: message.text == 'Выход', state='*')
 async def exit(message: Message, state: FSMContext):
     await state.finish()
     await message.reply('Работа завершена')
+
+
+@dp.message_handler(lambda message: message.text == 'Не заполнено', state='*')
+async def statistic(message: Message, state: FSMContext):
+    async with state.proxy() as data:
+        btns = not_filled(data['path'], keyboard[data['path']], data)
+        btns = ', '.join(btns)
+    await message.reply(f'Не заполнены поля: {btns}')
 
 
 @dp.message_handler(lambda message: message.text not in ['Назад', 'Сохранить', 'Главное меню', 'Выход'], state='*')
@@ -89,14 +98,16 @@ async def value_saver(message: Message, state: FSMContext):
                             ldata = json.load(f)
                             for key in ldata:
                                 data[key] = ldata[key]
+                data['path'] = '/'
                 if 'photo' not in data:
                     data['photo'] = {}
                 await message.reply(f"Выбран id задачи {message.text}")
+                await message.reply("init", reply_markup=ReplyKeyboardMarkup([['/start'], ['Назад'], ['Не заполнено'], ['Сохранить'], ['Выход']]))
                 return
             else:
                 await message.reply("Не выбран id задачи. Пришлите его в ответ")
                 return
-        
+
         for i in range(-3, 0):
             key = '/'.join(data['path'][:-1].split('/')[i:])
             if key in answer:
@@ -106,7 +117,7 @@ async def value_saver(message: Message, state: FSMContext):
                 await message.reply(data['path'], reply_markup=keyboard[data['path']])
                 return
 
-    await message.reply(prev_path(data['path']), reply_markup=keyboard[prev_path(data['path'])])
+    await message.reply(data['path'], reply_markup=keyboard[data['path']])
 
 
 @dp.message_handler(lambda message: message.text == 'Назад', state='*')
@@ -141,7 +152,6 @@ async def process_callback(callback_query: CallbackQuery, state: FSMContext):
 
         if path not in keyboard:
             if not end_path(data['path']):
-                await bot.send_message(callback_query.message.chat.id,  data['path'], reply_markup=keyboard[path])
                 return
 
             put_key_json(data['path'], data, callback_query.data)

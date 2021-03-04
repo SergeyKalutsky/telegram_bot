@@ -8,7 +8,10 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.contrib.fsm_storage.redis import RedisStorage
 
-API_TOKEN = '1650881664:AAGpNKLbcXNImnMu9ILZ861_NyLuoX1TIqo'
+API_TOKEN = ''
+with open('token.txt', 'r') as f:
+    API_TOKEN = f.readline()
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
