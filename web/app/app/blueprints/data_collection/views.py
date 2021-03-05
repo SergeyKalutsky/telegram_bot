@@ -15,9 +15,9 @@ from flask_principal import Principal, Permission, Identity, RoleNeed, identity_
 data_collection = Blueprint('data_collection', __name__)
 
 
-@data_collection.route("/parsing_manage", methods=['GET', 'POST'])
+@data_collection.route("/manage_tasks", methods=['GET', 'POST'])
 @login_required
-def parsing_manage():
+def manage_tasks():
     if request.method == 'POST':
         house_id = request.form['house_id']
         company_id = request.form['company_id']

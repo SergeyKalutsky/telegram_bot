@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<form method="POST" action="/add_entity">
+    <div class="container" style="margin-top:3%;margin-left:3%;width:20%">
+        <div class="form-group" style="margin-top:2%">
+                    <select class="form-control" id="DataSource" name="source">
+                        <option>Компания</option>
+                        <option>Адреc</option>
+                    </select>
+                    <div class="form-group" style="margin-top:2%">
+                        <input class="form-control" placeholder="Описание" name="name" value="">
+                    </div>
+        </div>
+        <button type="submit" class="btn btn-success">Добавить</button>
+        <span style="color:green" , id="error-message">
+            {{ message }}
+        </span>
+    </div>
+</form>
+{% endblock %}

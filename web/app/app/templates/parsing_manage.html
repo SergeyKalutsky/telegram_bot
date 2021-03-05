@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/css/bootstrap-select.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="margin-top:2%">
+    <div class="container" style="margin-top:20px; margin-left:10%;">
+        <div class="row">
+            <h3>Выберите дом и адресс</h3>
+        </div>
+        <div class="row" style="margin-top:2%">
+            <div class="col-sm" id="search">
+                <select class="selectpicker" data-live-search="true" name="company">
+                    <option value="" selected disabled hidden>Компания</option>
+                    {% for id, company in companies %}
+                    <option value="{{ id }}">{{ company }}</option>
+                    {% endfor %}
+                </select>
+                <select class="selectpicker" data-live-search="true" name="house">
+                    <option value="" selected disabled hidden>Адресс</option>
+                    {% for id, house in houses %}
+                    <option value="{{ id }}">{{ house }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="row" style="margin-top:2%">
+            <div class="col-sm" id="search">
+                <button type="button" class="btn btn-primary">Скачать</button>
+                <button type="button" class="btn btn-success">Получить ID</button>
+            </div>
+        </div>
+        <div class="row" style="margin-top:2%">
+            <div class="col-sm" id="search">
+                <span id="text">
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $('.btn.btn-primary').click(function () {
+        $.ajax({
+            type: 'POST',
+            url: '/manage_tasks',
+            data: {
+                'action': 'download_report',
+                'house_id': $("select[name=house]").val(),
+                'company_id': $("select[name=company]").val(),
+            },
+            success: function (response) {
+                console.log(response)
+                if (response.url != undefined) {
+                    window.location.replace(response.url);
+                }
+            }
+        })
+    })
+
+    $('.btn.btn-success').click(function () {
+        $.ajax({
+            type: 'POST',
+            url: '/manage_tasks',
+            data: {
+                'action': 'show_id',
+                'house_id': $("select[name=house]").val(),
+                'company_id': $("select[name=company]").val(),
+            },
+            success: function (response) {
+                $('#text').text('ID задачи: ' + response.id);
+            }
+        });
+    });
+</script>
+{% endblock %}
