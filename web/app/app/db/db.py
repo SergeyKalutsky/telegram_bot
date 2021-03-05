@@ -4,6 +4,7 @@ from flask_login import UserMixin
 
 db = SQLAlchemy()
 
+
 class User(UserMixin):
     def __init__(self, id, access):
         self.id = id
@@ -31,36 +32,72 @@ class Jobs(db.Model):
     company_id = db.Column(db.Integer)
 
 
+def select_data_type(id_):
+    res = db.session.query(Data.type_id).\
+        filter(Data.id == id_).first()[0]
+    return res
+
+
+def delete_data(id_, tipe_id):
+
+    db.session.query(Data).\
+        filter(Data.id == id_).delete()
+
+    q = db.session.query(Jobs)
+    if tipe_id == 1:
+        q.filter(Jobs.company_id == id_).delete()
+    else:
+        q.filter(Jobs.house_id == id_).delete()
+    db.session.commit()
+
 
 def auth(login):
     return Users.query.get(login)
 
+
 def select_users():
     return Users.query.all()
 
+
 def select_jobs():
     return Jobs.query.all()
+
 
 def insert_data(data):
     record = Data(**data)
     db.session.add(record)
     db.session.commit()
 
+
 def insert_job(data):
     record = Jobs(**data)
     db.session.add(record)
     db.session.commit()
+
 
 def select_description(id):
     res = db.session.query(Data.description).\
         filter(Data.id == id).first()
     return res[0]
 
-def select_job(company_id, house_id):
-    res = db.session.query(Jobs.id).\
-        filter(Jobs.house_id == house_id).\
-        filter(Jobs.company_id == company_id).first()
-    return res
+
+def select_job(company_id=None, house_id=None):
+    if (company_id is not None) and (house_id is not None):
+        res = db.session.query(Jobs.id).\
+            filter(Jobs.house_id == house_id).\
+            filter(Jobs.company_id == company_id).first()
+        return res
+
+    if company_id is not None:
+        res = db.session.query(Jobs.id).\
+            filter(Jobs.company_id == company_id).all()
+        return res
+
+    if house_id is not None:
+        res = db.session.query(Jobs.id).\
+            filter(Jobs.house_id == house_id).all()
+        return res
+
 
 def select_data(type_id):
     res = db.session.query(Data.id, Data.description).\

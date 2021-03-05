@@ -50,6 +50,7 @@ def make_word_doc(job_id, company, house):
         data = json.load(f)
 
     photo = data['photo'].copy()
+    del data['id']
     del data['photo']
     del data['path']
 
@@ -63,8 +64,7 @@ def make_word_doc(job_id, company, house):
         if key in photo:
             for ph_key in photo[key]:
                 for f_name in photo[key][ph_key]:
-                    doc.add_picture(os.path.join(
-                        'photo', f_name), width=Inches(3.5))
+                    doc.add_picture(os.path.join(f'static/data/{job_id}/photo', f_name), width=Inches(3.5))
                     p = doc.add_paragraph()
                     p.alignment = 1
                     p.add_run(ph_key)

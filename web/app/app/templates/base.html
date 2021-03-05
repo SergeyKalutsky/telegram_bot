@@ -30,7 +30,8 @@
             Меню
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-            <a class="dropdown-item" href="{{ url_for('data_collection.add_entity') }}">Добавить Дом/Квартиру</a>
+            <a class="dropdown-item" href="{{ url_for('data_collection.add_entity') }}">Добавить</a>
+            <a class="dropdown-item" href="{{ url_for('data_collection.delete_entity') }}">Удалить</a>
             <a class="dropdown-item" href="{{ url_for('data_collection.manage_tasks') }}">Управление задачами</a>
           </div>
         <li class="nav-item">

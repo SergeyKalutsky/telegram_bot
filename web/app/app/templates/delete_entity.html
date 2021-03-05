@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/css/bootstrap-select.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.13.1/js/bootstrap-select.min.js"></script>
+{% endblock %}
+
+
+{% block content %}
+<div class="container" style="margin-top:3%;margin-left:3%;width:20%">
+    <div class="row" style="margin-top:2%">
+        <div class="col-sm" id="search">
+            <select class="selectpicker" data-live-search="true" name="source">
+                <option value="" selected disabled hidden>Компания/Адрес</option>
+                {% for id, entity in data %}
+                <option value="{{ id }}">{{ entity }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-danger">Удалить</button>
+            <span style="color:red" , id="error-message">
+            </span>
+        </div>
+    </div>
+</div>
+<script>
+    $('.btn.btn-danger').click(function () {
+        $.ajax({
+            type: 'POST',
+            url: '/delete_entity',
+            data: {
+                'id': $("select[name=source]").val(),
+            },
+            success: function (response) {
+                $('#error-message').text(response.msg)
+            }
+        })
+    })
+</script>
+{% endblock %}
