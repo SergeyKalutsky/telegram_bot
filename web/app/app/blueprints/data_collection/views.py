@@ -61,8 +61,6 @@ def manage_tasks():
                     insert_job(
                         {'company_id': company_id, 'house_id': house_id})
                     job = select_job(company_id, house_id)
-                    os.mkdir(f'static/data/{job[0]}')
-                    os.mkdir(f'static/data/{job[0]}/photo')                    
                 return jsonify({'id': job})
             return jsonify({'id': 'Компания или дом не выбраны'})
     return render_template('manage_tasks.html', companies=select_data(1), houses=select_data(2))

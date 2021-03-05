@@ -1,6 +1,6 @@
 import os
 import json
-from bot import dp, bot
+from bot import dp, bot, con
 from answers import answer
 from aiogram import executor
 from helpers import prev_path, make_img_fname, put_key_json, not_filled
@@ -28,7 +28,6 @@ def end_path(path, end_val):
 
 @dp.message_handler(content_types=['photo'], state='*',)
 async def handle_docs_photo(message: Message, state: FSMContext):
-
     async with state.proxy() as data:
         if 'id' not in data:
             await message.reply("Не выбран id задачи. Пришлите его в ответ")
@@ -80,6 +79,10 @@ async def exit(message: Message, state: FSMContext):
 @dp.message_handler(lambda message: message.text == 'Не заполнено', state='*')
 async def statistic(message: Message, state: FSMContext):
     async with state.proxy() as data:
+        if 'id' not in data:
+            await message.reply("Не выбран id задачи. Пришлите его в ответ")
+            return
+
         btns = not_filled(data['path'], keyboard[data['path']], data)
         btns = ', '.join(btns)
     await message.reply(f'Не заполнены поля: {btns}')
@@ -90,23 +93,28 @@ async def value_saver(message: Message, state: FSMContext):
     async with state.proxy() as data:
         if 'id' not in data:
             if message.text.isdigit():
-                data['id'] = message.text
-                if not os.path.exists(os.path.join(BASEDIR, data['id'])):
-                    os.mkdir(os.path.join(BASEDIR, data['id']))
-                    os.mkdir(os.path.join(BASEDIR, data['id'], 'photo'))
+                res = con.execute(f'SELECT * FROM jobs WHERE id = {message.text}').fetchone()
+                if res:
+                    data['id'] = message.text
+                    if not os.path.exists(os.path.join(BASEDIR, message.text)):
+                        os.mkdir(os.path.join(BASEDIR, message.text))
+                        os.mkdir(os.path.join(BASEDIR, message.text, 'photo'))
+                    else:
+                        path = os.path.join(BASEDIR, data['id'], 'data.json')
+                        if os.path.exists(path):
+                            with open(path, 'r') as f:
+                                ldata = json.load(f)
+                                for key in ldata:
+                                    data[key] = ldata[key]
+                    data['path'] = '/'
+                    if 'photo' not in data:
+                        data['photo'] = {}
+                    await message.reply(f"Выбран id задачи {message.text}")
+                    await message.reply("init", reply_markup=ReplyKeyboardMarkup([['/start'], ['Назад'], ['Не заполнено'], ['Сохранить'], ['Выход']]))
+                    return
                 else:
-                    path = os.path.join(BASEDIR, data['id'], 'data.json')
-                    if os.path.exists(path):
-                        with open(path, 'r') as f:
-                            ldata = json.load(f)
-                            for key in ldata:
-                                data[key] = ldata[key]
-                data['path'] = '/'
-                if 'photo' not in data:
-                    data['photo'] = {}
-                await message.reply(f"Выбран id задачи {message.text}")
-                await message.reply("init", reply_markup=ReplyKeyboardMarkup([['/start'], ['Назад'], ['Не заполнено'], ['Сохранить'], ['Выход']]))
-                return
+                    await message.reply("Выбранного id не существует")
+                    return
             else:
                 await message.reply("Не выбран id задачи. Пришлите его в ответ")
                 return

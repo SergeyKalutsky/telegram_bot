@@ -13,21 +13,44 @@ def battn_vals(k):
     return lst
 
 
+def get_empty_keys(buttons, d):
+    not_filled_buttons = []
+    for button in buttons:
+        if button not in d.keys():
+            not_filled_buttons.append(button)
+    return not_filled_buttons
+
+
 def not_filled(path, keyboard, data):
     d = data.__dict__['_copy'].copy()
     buttons = battn_vals(keyboard)
     keys = path[1:-1].split('/')
+    # handle starting position
+    if not keys[0]:
+        return get_empty_keys(buttons, d)
+
     for key in keys:
         if key not in d:
             return buttons
         d = d[key]
-    not_filled_buttons = []
 
-    for button in buttons:
-        if button not in d.keys():
-            not_filled_buttons.append(button)
+    return get_empty_keys(buttons, d)
 
-    return not_filled_buttons
+# def not_filled(path, keyboard, data):
+#     d = data.__dict__['_copy'].copy()
+#     buttons = battn_vals(keyboard)
+#     keys = path[1:-1].split('/')
+#     for key in keys:
+#         if key not in d:
+#             return buttons
+#         d = d[key]
+#     not_filled_buttons = []
+
+#     for button in buttons:
+#         if button not in d.keys():
+#             not_filled_buttons.append(button)
+
+#     return not_filled_buttons
 
 
 def make_img_fname(ext='.jpg'):
@@ -47,14 +70,13 @@ def put_key_json(path, data, val, photo=False):
             d[key] = [val]
         else:
             d[key].append(val)
-    
+
     for i in range(len(keys)-1):
         if keys[i] not in data:
             data[keys[i]] = {keys[i+1]: {}}
         data = data[keys[i]]
-    
+
     if photo:
         data[keys[-1]] = 'photo'
-        return 
+        return
     data[keys[-1]] = val
-
