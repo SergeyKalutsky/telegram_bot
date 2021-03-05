@@ -56,9 +56,14 @@ def make_word_doc(job_id, company, house):
 
     for key in data:
         lst = []
-        for in_key in data[key]:
-            lst.append([in_key, str(data[key][in_key]).replace("'", '').
+        if type(data[key]) ==  str:
+            lst.append([key, data[key].replace("'", '').
                         replace('{', '\n').replace('}, ', '\n').replace('}', '').replace('Другое: ', '')])
+        else:
+            for in_key in data[key]:
+                lst.append([in_key, str(data[key][in_key]).replace("'", '').
+                            replace('{', '\n').replace('}, ', '\n').replace('}', '').replace('Другое: ', '')])
+
 
         write_section(lst, key, doc)
         if key in photo:

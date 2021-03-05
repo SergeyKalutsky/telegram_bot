@@ -1,7 +1,7 @@
 version: "3"
 services:
   app:
-      build: ./web/app
+      build: ./app
       restart: always
       volumes:
         - ./app:/app
