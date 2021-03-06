@@ -64,7 +64,7 @@ def put_key_json(path, data, val, photo=False):
             data = data[keys[i]]
 
     if photo:
-        data[keys[-1]] = 'photo'
+        data[keys[-1]] = val
         return
         
     data[keys[-1]] = val
