@@ -1,8 +1,3 @@
-"""
-This is a echo bot.
-It echoes any incoming text messages.
-"""
-
 import logging
 import sqlite3
 from aiogram import Bot, Dispatcher
@@ -17,7 +12,11 @@ with open('token.txt', 'r') as f:
 
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(filename='debug.log',
+                    filemode='a',
+                    format='%(asctime)s, %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.DEBUG)
 
 # Initialize bot and dispatcher
 storage = RedisStorage('localhost', 6379, db=1)

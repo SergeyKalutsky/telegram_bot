@@ -1,6 +1,6 @@
 import os
 import json
-from bot import dp, bot, con
+from bot import dp, bot, con, logging
 from answers import answer
 from aiogram import executor
 from helpers import prev_path, make_img_fname, put_key_json, not_filled
@@ -174,4 +174,10 @@ async def process_callback(callback_query: CallbackQuery, state: FSMContext):
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    while True:
+        try:
+            executor.start_polling(dp, skip_updates=True)
+            break
+        except Exception as e:
+            logging.exception(e)
+            continue
